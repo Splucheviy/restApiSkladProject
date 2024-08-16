@@ -1,8 +1,9 @@
 package main
 
 import (
-	"rest_api_sklad_project/cmd/apiserver"
-	_ "rest_api_sklad_project/docs"
+	"restApiSkladProject/cmd/apiserver"
+	_ "restApiSkladProject/docs"
+	"restApiSkladProject/pkg/db"
 )
 
 // @title			Sklad API Documentation
@@ -10,5 +11,8 @@ import (
 // @description	Sklad API Documentation
 // @termsOfService	http://swagger.io/terms/
 func main() {
-	apiserver.HandleRequests()
+	DB := db.Connect()
+	db.CreateTable(DB)
+	apiserver.HandleRequests(DB)
+	db.CloseConnection(DB)
 }

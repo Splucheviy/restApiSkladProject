@@ -1,16 +1,16 @@
 package apiserver
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	"rest_api_sklad_project/pkg/handlers"
+	"restApiSkladProject/pkg/handlers"
 
 	"github.com/gorilla/mux"
 
 	// swaggerFiles "github.com/swaggo/files"
 	httpSwagger "github.com/swaggo/http-swagger"
-
 )
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,8 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("SKLAD REST API")
 }
 
-func HandleRequests() {
+func HandleRequests(DB *sql.DB) {
+	h := handlers.New(DB)
 	r := mux.NewRouter().StrictSlash(true)
 	
 	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
@@ -29,10 +30,10 @@ func HandleRequests() {
 	)).Methods(http.MethodGet)
 
 	r.HandleFunc("/", homePage)
-	r.HandleFunc("/goods", handlers.GetAllGoods).Methods(http.MethodGet)
-	r.HandleFunc("/goods/{id}", handlers.GetGoods).Methods(http.MethodGet)
-	r.HandleFunc("/goods", handlers.AddGood).Methods(http.MethodPost)
-	r.HandleFunc("/goods/{id}", handlers.UpdateGoods).Methods(http.MethodPut)
-	r.HandleFunc("/goods/{id}", handlers.DeleteGoods).Methods(http.MethodDelete)
+	r.HandleFunc("/goods", h.GetAllGoods).Methods(http.MethodGet)
+	r.HandleFunc("/goods/{id}", h.GetGood).Methods(http.MethodGet)
+	r.HandleFunc("/goods", h.AddGood).Methods(http.MethodPost)
+	r.HandleFunc("/goods/{id}", h.UpdateGoods).Methods(http.MethodPut)
+	r.HandleFunc("/goods/{id}", h.DeleteGoods).Methods(http.MethodDelete)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

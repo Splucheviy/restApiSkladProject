@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
-	"rest_api_sklad_project/package/mocks"
+	"restApiSkladProject/pkg/models"
 
 	"github.com/gorilla/mux"
 )
@@ -18,16 +19,29 @@ import (
 //	@Param			Id	path		string	true	"Goods id"
 //	@Success		200	{string}	string
 //	@Router			/goods/{Id} [get]
-func GetGoods(w http.ResponseWriter, r *http.Request) {
+func (h handler) GetGood(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	for _, goods := range mocks.Goods {
-		if goods.Id == id {
-			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(goods)
-			break
+	queryStmt := `SELECT * FROM goodsDB WHERE id = $1 ;`
+	results, err := h.DB.Query(queryStmt, id)
+	if err != nil {
+		log.Println("failed to execute query", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	var good models.Goods
+	for results.Next() {
+		err = results.Scan(&good.Id, &good.Name, &good.Provider, &good.Price, &good.Quantity)
+		if err != nil {
+			log.Println("failed to scan", err)
+			w.WriteHeader(500)
+			return
 		}
 	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(good)
 }

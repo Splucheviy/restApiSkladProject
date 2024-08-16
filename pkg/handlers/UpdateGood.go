@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"net/http"
-	"rest_api_sklad_project/package/mocks"
-	"rest_api_sklad_project/package/models"
+	"net/http"	
+	"restApiSkladProject/pkg/models"
 
 	"github.com/gorilla/mux"
 )
@@ -25,33 +24,31 @@ import (
 //	@Param			Quantity	body		integer	true	"Goods quantity to update"
 //	@Success		200			{string}	string
 //	@Router			/goods/{id} [put]
-func UpdateGoods(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (h handler) UpdateGoods(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
 
-	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
+    // Read request body
+    defer r.Body.Close()
+    body, err := io.ReadAll(r.Body)
 
-	if err != nil {
-		log.Fatalln(err)
-	}
+    if err != nil {
+        log.Fatalln(err)
+    }
 
-	var updatedGoods models.Goods
-	json.Unmarshal(body, &updatedGoods)
+    var updatedGood models.Goods
+    json.Unmarshal(body, &updatedGood)
 
-	for index, goods := range mocks.Goods {
-		if goods.Id == id {
-			goods.Name = updatedGoods.Name
-			goods.Provider = updatedGoods.Provider
-			goods.Price = updatedGoods.Price
-			goods.Quantity = updatedGoods.Quantity
+    queryStmt := `UPDATE goodsDB SET title = $2, description = $3, content = $4 WHERE id = $1 RETURNING id;`
+    err = h.DB.QueryRow(queryStmt, &id, &updatedGood.Id, &updatedGood.Name, &updatedGood.Provider, &updatedGood.Price, &updatedGood.Quantity).Scan(&id)
+    if err != nil {
+        log.Println("failed to execute query", err)
+        w.WriteHeader(500)
+        return
+    }
 
-			mocks.Goods[index] = goods
+    w.Header().Add("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode("Updated")
 
-			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode("Updated")
-			break
-		}
-	}
 }
